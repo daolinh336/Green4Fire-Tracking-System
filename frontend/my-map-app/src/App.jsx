@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from 'react';
-import './App.css';
+import './css/App.css';
 import VietnamMap from './VietnamMap'; // Import component bản đồ
 
 function App() {
