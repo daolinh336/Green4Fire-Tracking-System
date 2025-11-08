@@ -49,7 +49,7 @@ php -S localhost:8000
 Truy cập: `http://localhost:8000`
 
 
-## 📁 Cấu Trúc Thư Mục
+## Cấu Trúc Thư Mục
 
 ```
 vietnam-map/
