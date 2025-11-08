@@ -1,0 +1,5 @@
+/* src/VietnamMap.css */
+.map-container {
+  height: 100vh; /* Chiếm 90% chiều cao màn hình */
+  width: 100%;
+}
