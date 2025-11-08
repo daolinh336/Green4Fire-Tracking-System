@@ -1,18 +1,15 @@
-// Khởi tạo bản đồ khi trang đã tải xong
 let map;
 let provincesLayer;
 let selectedProvince = null;
 
 // Hàm khởi tạo bản đồ
 function initMap() {
-    // Đảm bảo container đã có kích thước trước khi khởi tạo map
     const mapContainer = document.getElementById('map');
     if (!mapContainer) {
         console.error('Không tìm thấy element #map');
         return;
     }
     
-    // Đảm bảo container có kích thước
     const containerHeight = mapContainer.offsetHeight;
     const containerWidth = mapContainer.offsetWidth;
     
@@ -22,11 +19,8 @@ function initMap() {
         return;
     }
     
-    // Đợi một chút để đảm bảo CSS đã được áp dụng hoàn toàn
     setTimeout(function() {
-        // Tạo bản đồ, tập trung vào Việt Nam
-        // Tọa độ trung tâm Việt Nam: [16.0, 108.0]
-        // Zoom level: 6 (có thể điều chỉnh từ 1-18)
+        // Zoom level: 6
         map = L.map('map', {
             preferCanvas: false,
             zoomControl: true,
@@ -35,7 +29,6 @@ function initMap() {
         }).setView([16.0, 108.0], 6);
         
         // Thêm tile layer (bản đồ nền)
-        // Sử dụng OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19,
@@ -43,28 +36,21 @@ function initMap() {
             noWrap: false
         }).addTo(map);
         
-        // Quan trọng: Cập nhật kích thước bản đồ ngay sau khi tạo
-        // Điều này đảm bảo Leaflet nhận diện đúng kích thước container
+        // Cập nhật kích thước bản đồ ngay sau khi tạo
         setTimeout(function() {
             map.invalidateSize();
             
-            // Thử load dữ liệu GeoJSON thực tế từ URL trước
-            // Chỉ hiển thị bản đồ khi có dữ liệu thực, không hiển thị các hình chữ nhật đơn giản
+            // Load dữ liệu GeoJSON thực tế từ URL trước
             if (typeof loadRealGeoJSONData === 'function') {
                 loadRealGeoJSONData().then(loaded => {
                     if (!loaded) {
-                        // Nếu không load được dữ liệu thực, không hiển thị gì cả
-                        // (không hiển thị các hình chữ nhật đơn giản)
-                        console.log('Không tải được dữ liệu thực. Vui lòng cấu hình URL trong load-geojson.js');
-                        console.log('Để hiển thị ranh giới tỉnh thành, cần dữ liệu GeoJSON thực tế.');
+                        console.log('Không tải được dữ liệu thực.');
                     }
                 });
             } else {
-                // Không có hàm load dữ liệu thực, không hiển thị các hình đơn giản
-                console.log('Không có dữ liệu GeoJSON thực tế. Vui lòng cấu hình load-geojson.js');
+                console.log('Không có dữ liệu GeoJSON thực tế.');
             }
             
-            // Đợi thêm một chút để đảm bảo layer đã được thêm xong
             setTimeout(function() {
                 // Thiết lập tìm kiếm
                 setupSearch();
@@ -78,7 +64,6 @@ function initMap() {
                     }, 250);
                 });
                 
-                // Force invalidate size một lần nữa để đảm bảo
                 map.invalidateSize();
                 
                 console.log('Bản đồ đã được khởi tạo thành công!');
@@ -89,31 +74,29 @@ function initMap() {
 
 // Hàm thêm layer các tỉnh thành
 function addProvincesLayer() {
-    // Tạo style mặc định cho các tỉnh - style bản đồ hành chính
     function defaultStyle(feature) {
         return {
             fillColor: '#4a90e2',
             weight: 1.5,
             opacity: 1,
-            color: '#2c3e50', // Màu viền đậm để thấy rõ ranh giới
+            color: '#2c3e50',
             dashArray: '',
             fillOpacity: 0.4
         };
     }
     
-    // Tạo style khi hover (di chuột qua)
+    // Tạo style khi hover
     function highlightFeature(e) {
         const layer = e.target;
         
         layer.setStyle({
             weight: 3,
-            color: '#e74c3c', // Màu đỏ khi hover để dễ nhận biết
+            color: '#e74c3c',
             dashArray: '',
             fillOpacity: 0.7,
             fillColor: '#e74c3c'
         });
         
-        // Hiển thị thông tin khi hover
         if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
             layer.bringToFront();
         }
@@ -160,27 +143,22 @@ function addProvincesLayer() {
     // Lấy dữ liệu từ window object (từ load-geojson.js)
     const dataSource = window.vietnamProvincesData;
     
-    // Kiểm tra xem có dữ liệu không
     if (!dataSource || !dataSource.features || dataSource.features.length === 0) {
         console.warn('Không có dữ liệu GeoJSON. Đảm bảo file vn.geojson nằm trong thư mục data/');
         return;
     }
     
-    // Thêm GeoJSON layer vào bản đồ chỉ khi có dữ liệu thực
     try {
         provincesLayer = L.geoJSON(dataSource, {
             style: defaultStyle,
             onEachFeature: onEachFeature
         }).addTo(map);
         
-        console.log('✅ Đã tải và hiển thị', dataSource.features.length, 'tỉnh thành với ranh giới thực tế');
+        console.log('Đã tải và hiển thị', dataSource.features.length, 'tỉnh thành với ranh giới thực tế');
     } catch (error) {
         console.error('Lỗi khi tải dữ liệu GeoJSON:', error);
     }
 }
-
-// Hàm load dữ liệu GeoJSON thực tế từ URL sẽ được định nghĩa trong load-geojson.js
-// Nếu file đó không tồn tại, hàm này sẽ không được gọi
 
 // Hàm hiển thị thông tin tỉnh
 function showProvinceInfo(province) {
@@ -214,7 +192,7 @@ function setupSearch() {
         console.warn('Không có dữ liệu tỉnh thành để tìm kiếm');
         // Vô hiệu hóa ô tìm kiếm
         searchInput.disabled = true;
-        searchInput.placeholder = 'Không có dữ liệu. Đảm bảo file vn.geojson nằm trong thư mục data/';
+        searchInput.placeholder = 'Không có dữ liệu.';
         return;
     }
     
@@ -267,7 +245,6 @@ function setupSearch() {
     
     // Ẩn kết quả khi click bên ngoài
     document.addEventListener('click', function(e) {
-        // Chỉ ẩn nếu click không phải vào search input hoặc results
         if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
             searchResults.classList.remove('active');
         }
@@ -378,18 +355,14 @@ function highlightProvinceOnMap(provinceName) {
 }
 
 // Khởi tạo bản đồ khi DOM và window đã sẵn sàng
-// Sử dụng cả DOMContentLoaded và window load để đảm bảo CSS đã được áp dụng
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        // Đợi thêm một chút để CSS render xong
         setTimeout(initMap, 100);
     });
 } else {
-    // DOM đã sẵn sàng
     setTimeout(initMap, 100);
 }
 
-// Cũng lắng nghe event load để đảm bảo mọi thứ đã sẵn sàng
 window.addEventListener('load', function() {
     if (map) {
         setTimeout(function() {
@@ -417,4 +390,3 @@ window.vietnamMap = {
         highlightProvinceOnMap(name);
     }
 };
-
