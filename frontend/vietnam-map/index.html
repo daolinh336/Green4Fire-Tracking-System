@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản Đồ Việt Nam</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header với thanh tìm kiếm -->
+        <header>
+            <h1>Bản Đồ Việt Nam</h1>
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="province-search" 
+                    placeholder="Tìm kiếm tỉnh/thành phố..."
+                    autocomplete="off"
+                />
+                <div id="search-results" class="search-results"></div>
+            </div>
+        </header>
+
+        <!-- Bản đồ -->
+        <div id="map"></div>
+
+        <!-- Thông tin tỉnh được chọn -->
+        <div id="province-info" class="province-info"></div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script src="load-geojson.js"></script>
+    <!-- Main script -->
+    <script src="script.js"></script>
+</body>
+</html>
+
