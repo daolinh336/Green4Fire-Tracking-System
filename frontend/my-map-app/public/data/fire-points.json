@@ -1,0 +1,44 @@
+{
+  "firePoints": [
+    {
+      "id": 1,
+      "latitude": 16.047079,
+      "longitude": 108.206230,
+      "confidence": "high",
+      "timestamp": "2025-11-08T10:00:00Z",
+      "location": "Đà Nẵng"
+    },
+    {
+      "id": 2,
+      "latitude": 21.028511,
+      "longitude": 105.804817,
+      "confidence": "medium",
+      "timestamp": "2025-11-08T10:05:00Z",
+      "location": "Hà Nội"
+    },
+    {
+      "id": 3,
+      "latitude": 10.762622,
+      "longitude": 106.660172,
+      "confidence": "high",
+      "timestamp": "2025-11-08T10:10:00Z",
+      "location": "TP.HCM"
+    },
+    {
+      "id": 4,
+      "latitude": 12.238791,
+      "longitude": 109.196749,
+      "confidence": "low",
+      "timestamp": "2025-11-08T10:15:00Z",
+      "location": "Nha Trang"
+    },
+    {
+      "id": 5,
+      "latitude": 20.859726,
+      "longitude": 106.685183,
+      "confidence": "medium",
+      "timestamp": "2025-11-08T10:20:00Z",
+      "location": "Hải Phòng"
+    }
+  ]
+}
