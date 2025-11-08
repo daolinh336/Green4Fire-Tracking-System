@@ -1,0 +1,229 @@
+/* Reset và cơ bản */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    max-width: 1400px;
+    width: 100%;
+    height: calc(100vh - 40px);
+    max-height: calc(100vh - 40px);
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 30px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Search container */
+.search-container {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+#province-search {
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+#province-search:focus {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Search results dropdown */
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 10px;
+    margin-top: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+}
+
+.search-results.active {
+    display: block;
+}
+
+.search-result-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s;
+    color: #333;
+}
+
+.search-result-item strong {
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.search-result-item small {
+    color: #666;
+    font-size: 13px;
+}
+
+.search-result-item:hover {
+    background: #f0f0f0;
+    color: #000;
+}
+
+.search-result-item:hover strong {
+    color: #667eea;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+/* Bản đồ */
+#map {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 400px;
+    z-index: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Đảm bảo Leaflet container có kích thước đúng */
+.leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+    z-index: 1;
+    font-family: inherit;
+}
+
+/* Đảm bảo các lớp Leaflet hiển thị đúng */
+.leaflet-tile-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-pane {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.leaflet-map-pane {
+    width: 100%;
+    height: 100%;
+}
+
+/* Thông tin tỉnh */
+.province-info {
+    padding: 20px 30px;
+    background: #f8f9fa;
+    border-top: 2px solid #e0e0e0;
+    display: none;
+    flex-shrink: 0;
+}
+
+.province-info.active {
+    display: block;
+}
+
+.province-info h2 {
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.province-info p {
+    color: #666;
+    line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        height: calc(100vh - 20px);
+        border-radius: 0;
+        margin: 0;
+        max-width: 100%;
+    }
+    
+    header h1 {
+        font-size: 1.8em;
+    }
+    
+    header {
+        padding: 20px;
+    }
+    
+    #map {
+        flex: 1;
+        min-height: 0;
+    }
+}
+
+/* Leaflet custom styles */
+.leaflet-popup-content-wrapper {
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.leaflet-popup-content {
+    margin: 15px;
+    font-size: 14px;
+}
