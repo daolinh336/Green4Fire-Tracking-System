@@ -1,5 +1,43 @@
 /* src/VietnamMap.css */
 .map-container {
-  height: 100vh; /* Chiếm 90% chiều cao màn hình */
+  height: 100vh;
   width: 100%;
+}
+
+/* Style cho popup */
+.fire-point-popup {
+  position: absolute !important;
+  z-index: 1000;
+}
+
+.leaflet-popup {
+  margin-bottom: 0;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 220px;
+}
+
+.leaflet-popup-tip {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(5px);
+}
+
+/* Chỉnh sửa z-index để popup không che nhau */
+.leaflet-popup {
+  z-index: auto !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 700;
 }
