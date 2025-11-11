@@ -128,15 +128,18 @@ function VietnamMap() {
     if (!points || points.length === 0) return null;
 
     return (
-      <div className="info-table-container" style={{
+      <div className="info-table-container liquid" style={{
         position: 'absolute',
         top: '10px',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
         padding: '16px',
         maxHeight: '80vh',
         overflowY: 'auto',
@@ -148,15 +151,22 @@ function VietnamMap() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h3 style={{ margin: 0, color: '#333' }}>
+          <h3 style={{ margin: 0, color: '#1a1a1a', textShadow: '0 1px 2px rgba(255,255,255,0.3)', fontWeight: '700' }}>
             Thông tin điểm cháy ({points.length} điểm)
           </h3>
           <button onClick={() => setNearbyPoints([])} style={{
             border: 'none',
-            background: 'none',
+            background: 'rgba(0, 0, 0, 0.15)',
             cursor: 'pointer',
             fontSize: '20px',
-            color: '#666'
+            color: '#1a1a1a',
+            borderRadius: '50%',
+            width: '30px',
+            height: '30px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
           }}>&times;</button>
         </div>
         <table style={{
@@ -164,57 +174,57 @@ function VietnamMap() {
           borderCollapse: 'separate',
           borderSpacing: '0',
           fontSize: '14px',
-          color: '#333'
+          color: '#1a1a1a'
         }}>
           <thead>
             <tr>
               <th style={{
                 padding: '12px',
                 textAlign: 'left',
-                borderBottom: '2px solid #e1e1e1',
-                backgroundColor: '#f8f9fa',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 fontWeight: '600',
-                color: '#555'
+                color: '#1a1a1a'
               }}>Thời gian</th>
               <th style={{
                 padding: '12px',
                 textAlign: 'left',
-                borderBottom: '2px solid #e1e1e1',
-                backgroundColor: '#f8f9fa',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 fontWeight: '600',
-                color: '#555'
+                color: '#1a1a1a'
               }}>Vĩ độ</th>
               <th style={{
                 padding: '12px',
                 textAlign: 'left',
-                borderBottom: '2px solid #e1e1e1',
-                backgroundColor: '#f8f9fa',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 fontWeight: '600',
-                color: '#555'
+                color: '#1a1a1a'
               }}>Kinh độ</th>
               <th style={{
                 padding: '12px',
                 textAlign: 'left',
-                borderBottom: '2px solid #e1e1e1',
-                backgroundColor: '#f8f9fa',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 fontWeight: '600',
-                color: '#555'
+                color: '#1a1a1a'
               }}>Nhiệt độ (°K)</th>
               <th style={{
                 padding: '12px',
                 textAlign: 'left',
-                borderBottom: '2px solid #e1e1e1',
-                backgroundColor: '#f8f9fa',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 fontWeight: '600',
-                color: '#555'
+                color: '#1a1a1a'
               }}>FRP (MW)</th>
               <th style={{
                 padding: '12px',
                 textAlign: 'left',
-                borderBottom: '2px solid #e1e1e1',
-                backgroundColor: '#f8f9fa',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
                 fontWeight: '600',
-                color: '#555'
+                color: '#1a1a1a'
               }}>Độ tin cậy</th>
             </tr>
           </thead>
@@ -223,7 +233,7 @@ function VietnamMap() {
               const isEven = index % 2 === 0;
               return (
                 <tr key={point.id} style={{
-                  backgroundColor: isEven ? 'white' : '#f8f9fa',
+                  backgroundColor: isEven ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.08)',
                   transition: 'background-color 0.2s'
                 }}>
                   <td style={{
@@ -232,12 +242,12 @@ function VietnamMap() {
                       point.confidence === 'medium' ? '#fd7e14' :
                         '#ffc107'
                       }`,
-                    color: '#444'
+                    color: '#1a1a1a'
                   }}>{formatDateTime(point.timestamp)}</td>
-                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#444' }}>{point.latitude.toFixed(6)}</td>
-                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#444' }}>{point.longitude.toFixed(6)}</td>
-                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#444' }}>{point.brightness.toFixed(2)}</td>
-                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#444' }}>{point.frp.toFixed(2)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.latitude.toFixed(6)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.longitude.toFixed(6)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.brightness.toFixed(2)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.frp.toFixed(2)}</td>
                   <td style={{ padding: '12px' }}>
                     <span style={{
                       padding: '4px 8px',
