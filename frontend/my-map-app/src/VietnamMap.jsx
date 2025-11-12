@@ -85,11 +85,23 @@ function VietnamMap() {
       })
       .catch((error) => console.error('Lỗi tải GeoJSON:', error));
 
-    // Tải dữ liệu điểm cháy
-    fetch('/data/fire-points.json')
+    // Tải dữ liệu điểm cháy từ GeoJSON
+    fetch('/data/fires_SouthEast_Asia_viirs_7days.geojson')
       .then((response) => response.json())
       .then((data) => {
-        setFirePoints(data.firePoints);
+        // Chuyển đổi dữ liệu từ GeoJSON features sang mảng điểm cháy
+        const points = data.features.map(feature => ({
+          id: `${feature.properties.latitude}-${feature.properties.longitude}`,
+          latitude: feature.properties.latitude,
+          longitude: feature.properties.longitude,
+          confidence: feature.properties.confidence >= 80 ? 'high' :
+            feature.properties.confidence >= 60 ? 'medium' : 'low',
+          location: `Điểm cháy`,
+          timestamp: new Date(feature.properties.acq_datetime).getTime(),
+          brightness: feature.properties.brightness,
+          frp: feature.properties.frp
+        }));
+        setFirePoints(points);
       })
       .catch((error) => console.error('Lỗi tải điểm cháy:', error));
   }, []);
@@ -103,6 +115,164 @@ function VietnamMap() {
     // zoom 6 (xa nhất) -> 15000m
     // zoom 20 (gần nhất) -> 50m
     return Math.max(15000 * Math.pow(0.6, zoom - 6), 50);
+  };
+
+  // Hàm format thời gian
+  const formatDateTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
+
+  // Component bảng thông tin
+  const InfoTable = ({ points }) => {
+    if (!points || points.length === 0) return null;
+
+    return (
+      <div className="info-table-container liquid" style={{
+        position: 'absolute',
+        top: '10px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+        padding: '16px',
+        maxHeight: '80vh',
+        overflowY: 'auto',
+        width: '600px'
+      }}>
+        <div style={{
+          marginBottom: '10px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <h3 style={{ margin: 0, color: '#1a1a1a', textShadow: '0 1px 2px rgba(255,255,255,0.3)', fontWeight: '700' }}>
+            Thông tin điểm cháy ({points.length} điểm)
+          </h3>
+          <button onClick={() => setNearbyPoints([])} style={{
+            border: 'none',
+            background: 'rgba(0, 0, 0, 0.15)',
+            cursor: 'pointer',
+            fontSize: '20px',
+            color: '#1a1a1a',
+            borderRadius: '50%',
+            width: '30px',
+            height: '30px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}>&times;</button>
+        </div>
+        <table style={{
+          width: '100%',
+          borderCollapse: 'separate',
+          borderSpacing: '0',
+          fontSize: '14px',
+          color: '#1a1a1a'
+        }}>
+          <thead>
+            <tr>
+              <th style={{
+                padding: '12px',
+                textAlign: 'left',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                fontWeight: '600',
+                color: '#1a1a1a'
+              }}>Thời gian</th>
+              <th style={{
+                padding: '12px',
+                textAlign: 'left',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                fontWeight: '600',
+                color: '#1a1a1a'
+              }}>Vĩ độ</th>
+              <th style={{
+                padding: '12px',
+                textAlign: 'left',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                fontWeight: '600',
+                color: '#1a1a1a'
+              }}>Kinh độ</th>
+              <th style={{
+                padding: '12px',
+                textAlign: 'left',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                fontWeight: '600',
+                color: '#1a1a1a'
+              }}>Nhiệt độ (°K)</th>
+              <th style={{
+                padding: '12px',
+                textAlign: 'left',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                fontWeight: '600',
+                color: '#1a1a1a'
+              }}>FRP (MW)</th>
+              <th style={{
+                padding: '12px',
+                textAlign: 'left',
+                borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                fontWeight: '600',
+                color: '#1a1a1a'
+              }}>Độ tin cậy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {points.map((point, index) => {
+              const isEven = index % 2 === 0;
+              return (
+                <tr key={point.id} style={{
+                  backgroundColor: isEven ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.08)',
+                  transition: 'background-color 0.2s'
+                }}>
+                  <td style={{
+                    padding: '12px',
+                    borderLeft: `3px solid ${point.confidence === 'high' ? '#dc3545' :
+                      point.confidence === 'medium' ? '#fd7e14' :
+                        '#ffc107'
+                      }`,
+                    color: '#1a1a1a'
+                  }}>{formatDateTime(point.timestamp)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.latitude.toFixed(6)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.longitude.toFixed(6)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.brightness.toFixed(2)}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>{point.frp.toFixed(2)}</td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      backgroundColor: point.confidence === 'high' ? '#dc3545' :
+                        point.confidence === 'medium' ? '#fd7e14' :
+                          '#ffc107',
+                      color: 'white',
+                      display: 'inline-block',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}>
+                      {Math.round(point.confidence === 'high' ? 100 :
+                        point.confidence === 'medium' ? 70 : 40)}%
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   // Hàm này sẽ được gọi khi MapClickHandler bắt được sự kiện click
@@ -147,72 +317,8 @@ function VietnamMap() {
         />
       ))}
 
-      {/* Hiển thị thông tin các điểm cháy trong vùng query */}
-      {nearbyPoints.map((point) => (
-        <Popup
-          key={`popup-${point.id}`}
-          position={[point.latitude, point.longitude]}
-          closeButton={true}
-          autoPan={false}
-          className="fire-point-popup"
-          open={true}
-        >
-          <div style={{
-            padding: '10px',
-            borderRadius: '6px',
-            borderLeft: `4px solid ${point.confidence === 'high' ? '#ff0000' :
-              point.confidence === 'medium' ? '#ff6600' : '#ffcc00'
-              }`,
-            minWidth: '220px'
-          }}>
-            <div style={{
-              fontWeight: 'bold',
-              marginBottom: '8px',
-              fontSize: '1.1em',
-              color: '#333'
-            }}>{point.location}</div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'auto 1fr',
-              gap: '4px 8px',
-              fontSize: '0.95em',
-              color: '#555'
-            }}>
-              <div>Vĩ độ:</div>
-              <div style={{ fontFamily: 'monospace' }}>{point.latitude.toFixed(6)}</div>
-              <div>Kinh độ:</div>
-              <div style={{ fontFamily: 'monospace' }}>{point.longitude.toFixed(6)}</div>
-            </div>
-            <div style={{
-              marginTop: '8px',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              backgroundColor: point.confidence === 'high' ? 'rgba(255,0,0,0.1)' :
-                point.confidence === 'medium' ? 'rgba(255,102,0,0.1)' : 'rgba(255,204,0,0.1)',
-              color: point.confidence === 'high' ? '#d00' :
-                point.confidence === 'medium' ? '#c50' : '#b80',
-              fontWeight: '600',
-              fontSize: '0.9em',
-              display: 'inline-block'
-            }}>
-              Độ tin cậy: {point.confidence}
-            </div>
-            <div style={{
-              marginTop: '8px',
-              fontSize: '0.9em',
-              color: '#666',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z" />
-              </svg>
-              {new Date(point.timestamp).toLocaleString('vi-VN')}
-            </div>
-          </div>
-        </Popup>
-      ))}
+      {/* Hiển thị bảng thông tin cho các điểm cháy trong vùng query */}
+      {nearbyPoints.length > 0 && <InfoTable points={nearbyPoints} />}
     </MapContainer>
   );
 }
