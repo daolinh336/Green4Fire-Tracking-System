@@ -1,5 +1,0 @@
-xclim==0.44.0
-xarray>=2023.1
-pandas>=2.0
-requests>=2.31
-numpy>=1.24
