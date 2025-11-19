@@ -26,12 +26,12 @@ function ZoomHandler({ setZoomLevel }) {
   return null;
 }
 
-// Component để tự động điều chỉnh khung nhìn bản đồ
-function MapBoundsHandler({ points }) {
+// Component để tự động điều chỉnh khung nhìn bản đồ (chỉ lần đầu)
+function MapBoundsHandler({ points, shouldFit }) {
   const map = useMap();
 
   useEffect(() => {
-    if (points && points.length > 0) {
+    if (points && points.length > 0 && shouldFit) {
       // Tạo bounds từ tất cả các điểm
       const latLngs = points.map(point => [point.latitude, point.longitude]);
       const bounds = L.latLngBounds(latLngs);
@@ -39,7 +39,7 @@ function MapBoundsHandler({ points }) {
       // Điều chỉnh khung nhìn để hiển thị tất cả điểm với padding
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [points, map]);
+  }, [points, map, shouldFit]);
 
   return null;
 }
@@ -67,13 +67,173 @@ function MapClickHandler({ onMapClick, firePoints }) {
   return null;
 }
 
+// Component bộ lọc thời gian (đặt ngoài để tránh re-render)
+const TimeFilterBar = ({ timeFilter, setTimeFilter, firePointsCount, isFilterVisible, setIsFilterVisible }) => {
+  const filterButtons = [
+    { id: '24HRS', label: '24HRS' },
+    { id: '3DAYS', label: '3DAYS' },
+    { id: '7DAYS', label: '7DAYS' },
+    { id: '1MONTH', label: '1MONTH' }
+  ];
+
+  // Hàm format ngày hiện tại
+  const formatCurrentDate = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    return `${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
+  };
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '10px',
+      right: '10px',
+      zIndex: 1000,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      alignItems: 'flex-end'
+    }}>
+      {/* Nút toggle */}
+      <button
+        onClick={() => setIsFilterVisible(!isFilterVisible)}
+        style={{
+          background: 'rgba(45, 45, 45, 0.95)',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '10px',
+          cursor: 'pointer',
+          color: '#4ade80',
+          fontSize: '24px',
+          width: '45px',
+          height: '45px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        ☰
+      </button>
+
+      {/* Bảng điều khiển lọc */}
+      {isFilterVisible && (
+        <div style={{
+          background: 'rgba(45, 45, 45, 0.95)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          padding: '16px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+          minWidth: '280px',
+          animation: 'slideIn 0.3s ease'
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '12px',
+            paddingBottom: '12px',
+            borderBottom: '2px solid rgba(74, 222, 128, 0.3)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <span style={{ color: '#4ade80', fontSize: '20px' }}>☰</span>
+              <div style={{
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: '400'
+              }}>{formatCurrentDate()}</div>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFilterVisible(false);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#888',
+                cursor: 'pointer',
+                fontSize: '24px',
+                padding: '0',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 0.2s'
+              }}
+            >×</button>
+          </div>
+
+          {/* Các nút lọc */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap'
+          }}>
+            {filterButtons.map(btn => (
+              <button
+                key={btn.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTimeFilter(btn.id);
+                }}
+                style={{
+                  background: timeFilter === btn.id ? '#4ade80' : 'rgba(255, 255, 255, 0.1)',
+                  border: timeFilter === btn.id ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  color: timeFilter === btn.id ? '#1a1a1a' : '#fff',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease',
+                  flex: '1',
+                  minWidth: '70px',
+                  textAlign: 'center'
+                }}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Thông tin số lượng */}
+          <div style={{
+            marginTop: '12px',
+            padding: '8px',
+            background: 'rgba(74, 222, 128, 0.1)',
+            borderRadius: '6px',
+            color: '#4ade80',
+            fontSize: '12px',
+            textAlign: 'center',
+            fontWeight: '600'
+          }}>
+            {firePointsCount} điểm cháy
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 function VietnamMap() {
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [clickedPosition, setClickedPosition] = useState(null);
   const [firePoints, setFirePoints] = useState([]);
+  const [allFirePoints, setAllFirePoints] = useState([]); // Lưu tất cả điểm cháy
   const [zoomLevel, setZoomLevel] = useState(6);
   const [nearbyPoints, setNearbyPoints] = useState([]);
+  const [timeFilter, setTimeFilter] = useState('7DAYS'); // 24HRS, 3DAYS, 7DAYS, 1MONTH
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [shouldFitBounds, setShouldFitBounds] = useState(true); // Chỉ fit bounds lần đầu
 
   // Dùng useEffect để tải dữ liệu GeoJSON và điểm cháy
   useEffect(() => {
@@ -101,10 +261,44 @@ function VietnamMap() {
           brightness: feature.properties.brightness,
           frp: feature.properties.frp
         }));
-        setFirePoints(points);
+        setAllFirePoints(points);
+        setFirePoints(points); // Mặc định hiển thị 7 ngày
+        setShouldFitBounds(true); // Cho phép fit bounds lần đầu
       })
       .catch((error) => console.error('Lỗi tải điểm cháy:', error));
   }, []);
+
+  // Lọc điểm cháy theo thời gian
+  useEffect(() => {
+    if (allFirePoints.length === 0) return; // Chưa load xong data
+    
+    setShouldFitBounds(false); // Tắt auto fit khi filter
+    const now = Date.now();
+    let filtered = [];
+
+    switch (timeFilter) {
+      case '24HRS':
+        // Lọc 24 giờ qua
+        filtered = allFirePoints.filter(point => now - point.timestamp <= 24 * 60 * 60 * 1000);
+        break;
+      case '3DAYS':
+        // Lọc 3 ngày qua
+        filtered = allFirePoints.filter(point => now - point.timestamp <= 3 * 24 * 60 * 60 * 1000);
+        break;
+      case '7DAYS':
+        // Lọc 7 ngày qua
+        filtered = allFirePoints.filter(point => now - point.timestamp <= 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '1MONTH':
+        // Lọc 1 tháng qua
+        filtered = allFirePoints.filter(point => now - point.timestamp <= 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        filtered = allFirePoints;
+    }
+
+    setFirePoints(filtered);
+  }, [timeFilter, allFirePoints]);
 
   // Tọa độ trung tâm Việt Nam (ví dụ: Đà Nẵng)
   const center = [16.047079, 108.206230];
@@ -122,6 +316,8 @@ function VietnamMap() {
     const date = new Date(timestamp);
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')} ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
+
+
 
   // Component bảng thông tin
   const InfoTable = ({ points }) => {
@@ -292,7 +488,16 @@ function VietnamMap() {
 
       <ZoomHandler setZoomLevel={setZoomLevel} />
       <MapClickHandler onMapClick={handleMapClick} firePoints={firePoints} />
-      <MapBoundsHandler points={firePoints} />
+      <MapBoundsHandler points={firePoints} shouldFit={shouldFitBounds} />
+
+      {/* Bộ lọc thời gian */}
+      <TimeFilterBar
+        timeFilter={timeFilter}
+        setTimeFilter={setTimeFilter}
+        firePointsCount={firePoints.length}
+        isFilterVisible={isFilterVisible}
+        setIsFilterVisible={setIsFilterVisible}
+      />
 
       {/* Vòng tròn vùng click */}
       {clickedPosition && (

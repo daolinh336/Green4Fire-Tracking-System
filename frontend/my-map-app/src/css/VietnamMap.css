@@ -4,6 +4,19 @@
   width: 100%;
 }
 
+/* Animation cho filter panel */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Style cho popup */
 .fire-point-popup {
   position: absolute !important;
