@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import VietnamMap from './VietnamMap';
 import LoadingStatus from './LoadingStatus';
+import LoadingStatusPredict from './LoadingStatusPredict';
 import TimeFilterBar from './TimeFilterBar';
 import LayerControl from './LayerControl';
+import LayerPredictControl from './LayerPredictionControl';
 import FireAPI from './api/FireAPI';
 import './css/App.css';
 
@@ -11,7 +13,7 @@ function App() {
   // --- 1. CHUYỂN TOÀN BỘ STATE VỀ ĐÂY ---
   const [allFirePoints, setAllFirePoints] = useState([]);
   const [firePoints, setFirePoints] = useState([]);
-//const [PredfirePoints, setPredfirePoints] = useState([]);
+  const [predFirePoints, setPredFirePoints] = useState([]);
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [forestGridData, setForestGridData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +21,7 @@ function App() {
   
   // State điều khiển giao diện
   const [showVNBoundary, setShowVNBoundary] = useState(true);
+  const [showPredictData, setShowPredictData] = useState(true);
   const [showForestGrid, setShowForestGrid] = useState(false);
   const [timeFilter, setTimeFilter] = useState('7DAYS');
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -32,6 +35,7 @@ function App() {
     fetch('/data/vn.geojson').then(r => r.json()).then(setGeoJsonData);
     fetch('/data/forest_grid.geojson').then(r => r.json()).then(setForestGridData);
     loadFireData(7);
+    //loadPredictFireData();
   }, []);
 
 
@@ -130,10 +134,26 @@ return (
               setShowForestGrid={setShowForestGrid}
         />
         </div>
+
+        <div>
+          <label>Prediction Fire Data</label>
+          <LayerPredictControl 
+          showPredictData={showPredictData}
+          setShowPredictData={setShowPredictData}
+        />
+        </div>
         
         {/* Đặt trạng thái loading vào đây */}
         <div className="status-box">
                    <LoadingStatus 
+          isLoading={isLoading}
+          apiStatus={apiStatus}
+          firePointsCount={firePoints.length}
+        />
+        </div>
+
+        <div className="status-box">
+                   <LoadingStatusPredict 
           isLoading={isLoading}
           apiStatus={apiStatus}
           firePointsCount={firePoints.length}
@@ -150,6 +170,8 @@ return (
           forestGridData={forestGridData}
           showForestGrid={showForestGrid}
           firePoints={firePoints}
+          predFirePoints={predFirePoints}
+          showPredictData={showPredictData}
         />
       </div>
 

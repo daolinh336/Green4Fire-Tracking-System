@@ -1,8 +1,8 @@
-const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
+const LoadingStatusPredict = ({ isLoading, apiStatus, firePointsCount }) => {
   return (
     <div style={{
       position: 'absolute',
-      bottom: '17px',  // Thay top='10px' thành bottom
+      bottom: '150px',  // Thay top='10px' thành bottom
       left: '10px',    // Giữ nguyên bên trái
       zIndex: 1000,
       background: 'rgba(45, 45, 45, 0.95)',
@@ -29,7 +29,7 @@ const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
           fontSize: '14px',
           fontWeight: '600'
         }}>
-          Data from NASA FIRMS VIIRS
+          Get predict data
         </div>
       </div>
       
@@ -60,7 +60,16 @@ const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
              'Sẵn sàng'}
           </span>
         </div>
-      
+        
+        <div style={{
+          fontSize: '12px',
+          color: '#888',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          paddingTop: '8px'
+        }}>
+          Data from Predict Model
+        </div>
+        
         
         {firePointsCount > 0 && (
           <div style={{
@@ -94,4 +103,4 @@ const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
   );
 };
 
-export default LoadingStatus;
+export default LoadingStatusPredict;

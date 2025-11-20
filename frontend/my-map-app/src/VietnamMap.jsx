@@ -270,7 +270,10 @@ const InfoTable = ({ points, onClose }) => {
 function VietnamMap({ 
   geoJsonData, showVNBoundary,
   forestGridData, showForestGrid,
-  firePoints}
+  firePoints,
+  predFirePoints,
+  showPredictData
+}
 ) {
   const [clickedPosition, setClickedPosition] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(6);
@@ -331,6 +334,8 @@ function VietnamMap({
             }}
           />
         )}
+
+        {/* show data prediction layer */}
 
         <ZoomHandler setZoomLevel={setZoomLevel} />
         <MapClickHandler onMapClick={handleMapClick} firePoints={firePoints} />

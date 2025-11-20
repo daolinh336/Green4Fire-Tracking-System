@@ -1,9 +1,9 @@
 const API_CONFIG = {
   BASE_URL: 'https://vdhgbth050.execute-api.ap-southeast-2.amazonaws.com/production/firmsfire',
   //BASE_URL: '',
-  TIMEOUT: 20000,
+  TIMEOUT: 50000,
   RETRY_ATTEMPTS: 2,
-  RETRY_DELAY: 10000
+  RETRY_DELAY: 20000
 };
 
 // ========== API SERVICE ==========
@@ -52,6 +52,19 @@ const FireAPI = {
       }
     }
   },
+
+  // async fetchPredictFires(params = {}) {
+  //   const queryParams = new URLSearchParams({
+  //     region: 'SouthEast_Asia',
+  //     ...params
+  // goi FIRE PREDICTION API o day
+  //   });
+
+  // convertToPredictFirePoints(geojson) {
+  //   if (!geojson?.features) return [];
+  //convert data PredictFirePoints o day
+  // }
+
 
   convertToFirePoints(geojson) {
     if (!geojson?.features) return [];
