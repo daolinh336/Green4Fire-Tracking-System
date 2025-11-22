@@ -45,3 +45,64 @@ h2 {
   padding-bottom: 10px;
   margin-bottom: 10px;
 }
+/* CONTAINER CHUNG */
+.fire-info-card {
+    background-color: #222222; 
+    color: #ffffff;
+    padding: 15px; /* GIẢM PADDING TỔNG THỂ */
+    border-radius: 8px; /* Giảm góc bo tròn */
+    box-sizing: border-box; /* RẤT QUAN TRỌNG: Đảm bảo padding không làm tăng width */
+    font-family: Arial, sans-serif; 
+    font-size: 0.9em; /* Giảm font chữ một chút */
+    line-height: 1.5; /* Dòng cao hơn dễ đọc hơn */
+}
+
+/* TIÊU ĐỀ CHÍNH */
+.fire-info-card h3 {
+    font-size: 1.3em; /* Giảm size tiêu đề */
+    border-bottom: 1px solid #444; /* Viền mỏng hơn */
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+/* TIÊU ĐỀ PHỤ */
+.fire-info-card h4 {
+    font-size: 1em;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: #ffd700; 
+}
+
+/* BẢNG FWI - Tối ưu hóa không gian */
+.fwi-table.compact {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.fwi-table.compact th, .fwi-table.compact td {
+    padding: 5px; /* GIẢM PADDING CỦA Ô */
+    text-align: left;
+    font-size: 0.9em;
+}
+
+.fwi-table.compact th {
+    /* Đảm bảo cột FWI Value không quá rộng */
+    width: 45%; 
+    font-weight: 400; /* Bỏ in đậm để trông gọn hơn */
+    color: #cccccc;
+    background-color: #282828;
+}
+
+.fwi-table.compact td {
+    font-weight: 600; /* Giữ in đậm cho mức độ nguy hiểm */
+}
+
+/* Các hàng dữ liệu */
+.fwi-table.compact tbody tr:nth-child(even) {
+    background-color: #282828;
+}
+
+/* ĐƯỜNG PHÂN CÁCH */
+.divider {
+    margin: 10px 0; /* Giảm margin */
+}

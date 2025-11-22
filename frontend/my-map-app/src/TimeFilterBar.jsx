@@ -9,9 +9,9 @@ const TimeFilterBar = ({
   onRefresh 
 }) => {
   const filterButtons = [
-    { id: '24HRS', label: '1 Ngày', days: 1 },
-    { id: '3DAYS', label: '3 Ngày', days: 3 },
-    { id: '7DAYS', label: '7 Ngày', days: 7 },
+    { id: '24HRS', label: '1 Day', days: 1 },
+    { id: '3DAYS', label: '3 Days', days: 3 },
+    { id: '7DAYS', label: '7 Days', days: 7 },
   ];
 
   const formatCurrentDate = () => {
@@ -35,9 +35,6 @@ const TimeFilterBar = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        paddingBottom: '8px',
-        marginBottom: '4px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
            <span style={{ fontSize: '16px' }}>📅</span>
@@ -48,7 +45,7 @@ const TimeFilterBar = ({
       {/* Các nút bấm chọn thời gian */}
       <div style={{
         display: 'flex',
-        gap: '8px',
+        gap: '4px',
         flexWrap: 'wrap' // Tự xuống dòng nếu không đủ chỗ
       }}>
         {filterButtons.map(btn => (
@@ -92,7 +89,7 @@ const TimeFilterBar = ({
         textAlign: 'center',
         fontWeight: '600'
       }}>
-        {isLoading ? 'Đang tải dữ liệu...' : `🔥 Tìm thấy ${firePointsCount} điểm cháy trong vòng ${timeFilter === '24HRS' ? '1 ngày' : timeFilter === '3DAYS' ? '3 ngày' : '7 ngày'}`}
+        {isLoading ? 'Fetching...' : `🔥 ${firePointsCount} firepoints founded in ${timeFilter === '24HRS' ? '1 day' : timeFilter === '3DAYS' ? '3 days' : '7 days'}`}
       </div>
 
     </div>

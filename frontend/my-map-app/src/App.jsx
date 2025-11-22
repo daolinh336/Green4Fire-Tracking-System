@@ -18,6 +18,9 @@ function App() {
   const [forestGridData, setForestGridData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState('idle');
+
+  const [isPredLoading, setIsPredLoading] = useState(false);
+  const [apiStatusPred, setApiStatusPred] = useState('idle');
   
   // State điều khiển giao diện
   const [showVNBoundary, setShowVNBoundary] = useState(true);
@@ -29,13 +32,16 @@ function App() {
   const [shouldFitBounds, setShouldFitBounds] = useState(true);
   const [error, setError] = useState(null);
 
+  const [shouldFitBoundsPred, setShouldFitBoundsPred] = useState(true);
+  const [errorPred, setErrorPred] = useState(null);
+
   // --- 2. CHUYỂN LOGIC GỌI API VỀ ĐÂY ---
   // Load GeoJSON tĩnh
   useEffect(() => {
     fetch('/data/vn.geojson').then(r => r.json()).then(setGeoJsonData);
     fetch('/data/forest_grid.geojson').then(r => r.json()).then(setForestGridData);
     loadFireData(7);
-    //loadPredictFireData();
+    loadPredictFireData();
   }, []);
 
 
@@ -52,7 +58,6 @@ function App() {
       return diffDays <= days;
     });
     setFirePoints(filteredPoints);
-    setShouldFitBounds(true); 
 };
   const loadFallbackData = async () => {
     try {
@@ -102,18 +107,41 @@ function App() {
     }
   };
 
+
+
+  const loadPredictFireData = async () => {
+    setIsPredLoading(true);
+    setApiStatusPred('loading');
+    setErrorPred(null);
+
+    try {
+      const geojson = await FireAPI.fetchPredictFires();
+
+      const points = FireAPI.convertToPredictFirePoints(geojson);
+      setPredFirePoints(points);
+      setShouldFitBoundsPred(true);
+      setApiStatusPred('success');
+      console.log(points)
+
+    } catch (err) {
+      console.error('❌ Error loading fire data:', err);
+      setErrorPred(err.message);
+    } finally {
+      setIsPredLoading(false);
+    }
+  }
+
+
+
   // --- 3. RENDER GIAO DIỆN ---
 return (
     <div className="dashboard-container">
       
       {/* === CỘT TRÁI: CÔNG CỤ === */}
       <div className="sidebar-left">
-        <h2>🛠️ Công cụ</h2>
-        
         {/* Đặt bộ lọc thời gian vào đây */}
         <div className="control-group">
-            <label>Thời gian:</label>
-                    <TimeFilterBar
+          <TimeFilterBar
           timeFilter={timeFilter}
           setTimeFilter={setTimeFilter}
           firePointsCount={firePoints.length}
@@ -126,7 +154,7 @@ return (
 
         {/* Đặt điều khiển lớp bản đồ vào đây */}
         <div className="control-group">
-            <label>Lớp hiển thị:</label>
+            <label>Layer:</label>
                     <LayerControl
               showVNBoundary={showVNBoundary}
               setShowVNBoundary={setShowVNBoundary}
@@ -136,7 +164,7 @@ return (
         </div>
 
         <div>
-          <label>Prediction Fire Data</label>
+          <label>Prediction</label>
           <LayerPredictControl 
           showPredictData={showPredictData}
           setShowPredictData={setShowPredictData}
@@ -154,9 +182,9 @@ return (
 
         <div className="status-box">
                    <LoadingStatusPredict 
-          isLoading={isLoading}
-          apiStatus={apiStatus}
-          firePointsCount={firePoints.length}
+          isPredLoading={isPredLoading}
+          apiStatusPred={apiStatusPred}
+          predFirePointsCount={predFirePoints.length}
         />
         </div>
       </div>
@@ -176,8 +204,67 @@ return (
       </div>
 
 
-      {/* === CỘT PHẢI: THÔNG TIN CHI TIẾT === */}
       <div className="sidebar-right">
+          <div className="sidebar-right fire-info-card">
+  
+  {/* TIÊU ĐỀ */}
+  <h3 className="card-header">
+    <span role="img" aria-label="fire">🔥</span> Fire Danger Classification
+  </h3>
+  
+  <p className="description">
+    The Fire Weather Index (FWI) is a meteorologically-based index used worldwide to estimate fire danger. We classify the danger level based on the mean FWI value, calculated from four corner points and the center of the prediction area.
+  </p>
+
+  {/* BẢNG PHÂN LOẠI FWI - Đã làm gọn */}
+  <h4>FWI Danger Scale</h4>
+  <table className="fwi-table compact"> {/* Thêm class 'compact' */}
+    <tbody>
+      <tr>
+        <th>Value &lt; 5</th>
+        <td className="level-very-low">Very Low</td>
+      </tr>
+      <tr>
+        <th>Value &lt; 12</th>
+        <td className="level-low">Low</td>
+      </tr>
+      <tr>
+        <th>Value &lt; 22</th>
+        <td className="level-moderate">Moderate</td>
+      </tr>
+      <tr>
+        <th>Value &lt; 32</th>
+        <td className="level-high">High</td>
+      </tr>
+      <tr>
+        <th>Value &lt; 50</th>
+        <td className="level-very-high">Very High</td>
+      </tr>
+      <tr>
+        <th>Value &gt; 50</th>
+        <td className="level-extreme">Extreme</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr className="divider"/>
+
+  {/* CHU KỲ CẬP NHẬT */}
+  <div className="update-cycle">
+    <h4>Data Update Cycle</h4>
+    <p>Data is update once a day</p>
+  </div>
+  
+  <hr className="divider"/>
+
+  {/* GỢI Ý TƯƠNG TÁC */}
+  <div className="interaction-tip">
+    <h4>Map Interaction Tip</h4>
+    <p>
+      To select fire or prediction points accurately, you can click to map to view information within a 10km radius circle centered on the cursor. Please zoom in on the map for better selection precision
+    </p>
+  </div>
+</div>
       </div>
 
     </div>

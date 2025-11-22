@@ -1,10 +1,6 @@
 const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
   return (
     <div style={{
-      position: 'absolute',
-      bottom: '17px',  // Thay top='10px' thành bottom
-      left: '10px',    // Giữ nguyên bên trái
-      zIndex: 1000,
       background: 'rgba(45, 45, 45, 0.95)',
       backdropFilter: 'blur(10px)',
       borderRadius: '12px',
@@ -16,7 +12,6 @@ const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        marginBottom: '12px'
       }}>
         <span style={{
           fontSize: '20px',
@@ -29,7 +24,7 @@ const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
           fontSize: '14px',
           fontWeight: '600'
         }}>
-          Data from NASA FIRMS VIIRS
+          Data from NASA FIRMS
         </div>
       </div>
       
@@ -54,9 +49,9 @@ const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
             animation: apiStatus === 'loading' ? 'pulse 1.5s infinite' : 'none'
           }}></span>
           <span style={{ color: '#fff' }}>
-            {apiStatus === 'loading' ? 'Đang tải từ API...' :
-             apiStatus === 'success' ? 'Dữ liệu thời gian thực' :
-             apiStatus === 'fallback' ? 'Dữ liệu dự phòng (7 ngày)' :
+            {apiStatus === 'loading' ? 'Fetching Data...' :
+             apiStatus === 'success' ? ' Successful' :
+             apiStatus === 'fallback' ? 'Failed to fetch, back-up data (7 days)' :
              'Sẵn sàng'}
           </span>
         </div>
@@ -67,13 +62,12 @@ const LoadingStatus = ({ isLoading, apiStatus, firePointsCount }) => {
             fontSize: '13px',
             color: '#4ade80',
             fontWeight: '600',
-            marginTop: '4px',
             padding: '8px',
             background: 'rgba(74, 222, 128, 0.1)',
             borderRadius: '6px',
             textAlign: 'center'
           }}>
-            {firePointsCount} điểm cháy
+            {firePointsCount} firepoints
           </div>
         )}
       </div>

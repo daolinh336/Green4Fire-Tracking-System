@@ -27,7 +27,7 @@ const LayerControl = ({ showVNBoundary, setShowVNBoundary, showForestGrid, setSh
             cursor: 'pointer'
           }}
         />
-        <span>Ranh giới Việt Nam</span>
+        <span>VietNam Boundary</span>
       </label>
       
       {/* Checkbox 2: Lưới rừng */}
@@ -49,7 +49,7 @@ const LayerControl = ({ showVNBoundary, setShowVNBoundary, showForestGrid, setSh
             cursor: 'pointer'
           }}
         />
-        <span>Lưới rừng</span>
+        <span>VietNam Forest Grid</span>
       </label>
     </div>
   );

@@ -26,7 +26,7 @@ const LayerPredictControl = ({ showPredictData, setShowPredictData }) => {
             cursor: 'pointer'
           }}
         />
-        <span>Show</span>
+        <span>Change to Prediction Mode</span>
       </label>
     </div>
   );
