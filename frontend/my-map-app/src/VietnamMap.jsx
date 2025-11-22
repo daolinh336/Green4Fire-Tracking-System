@@ -414,38 +414,6 @@ const InfoTablePred = ({ points, onClose }) => {
               backgroundColor: 'rgba(255, 255, 255, 0.15)',
               fontWeight: '600',
               color: '#1a1a1a'
-            }}>S2</th>
-            <th style={{
-              padding: '12px',
-              textAlign: 'left',
-              borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              fontWeight: '600',
-              color: '#1a1a1a'
-            }}>S3</th>
-            <th style={{
-              padding: '12px',
-              textAlign: 'left',
-              borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              fontWeight: '600',
-              color: '#1a1a1a'
-            }}>S4</th>
-            <th style={{
-              padding: '12px',
-              textAlign: 'left',
-              borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              fontWeight: '600',
-              color: '#1a1a1a'
-            }}>S5</th>
-            <th style={{
-              padding: '12px',
-              textAlign: 'left',
-              borderBottom: '2px solid rgba(0, 0, 0, 0.15)',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              fontWeight: '600',
-              color: '#1a1a1a'
             }}>Danger Level</th>
           </tr>
         </thead>
@@ -481,18 +449,6 @@ const InfoTablePred = ({ points, onClose }) => {
                 </td>
                 <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>
                   {fwi_max}
-                </td>
-                <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>
-                  N/A
-                </td>
-                <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>
-                  N/A
-                </td>
-                <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>
-                  N/A
-                </td>
-                <td style={{ padding: '12px', fontFamily: 'monospace', color: '#1a1a1a' }}>
-                  N/A
                 </td>
                 <td style={{ padding: '12px' }}>
                   <span style={{
