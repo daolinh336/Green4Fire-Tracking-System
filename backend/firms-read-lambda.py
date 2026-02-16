@@ -3,6 +3,10 @@ import os
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
+import gzip
+import base64
+import json
+from decimal import Decimal
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -10,10 +14,10 @@ from boto3.dynamodb.conditions import Key
 # ==== ENV ====
 DDB_TABLE = os.getenv("DDB_TABLE", "FIRMSFires")
 PRIMARY_KEY_NAME = os.getenv("PRIMARY_KEY_NAME", "ID")
-GSI_NAME = os.getenv("GSI_NAME", "FIRMSFires_ByDate")
+GSI_NAME = os.getenv("GSI_NAME", "FIRMSFires_ByDate")   # PK: gsi_date (S), SK: acq_datetime_utc (S)
 DEFAULT_DAYS = int(os.getenv("DEFAULT_DAYS", "30"))
-MAX_ITEMS = int(os.getenv("MAX_ITEMS", "20000"))
-ALLOW_ORIGIN = os.getenv("ALLOW_ORIGIN", "*")       
+MAX_ITEMS = int(os.getenv("MAX_ITEMS", "50000"))
+ALLOW_ORIGIN = os.getenv("ALLOW_ORIGIN", "*")           # CORS
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(DDB_TABLE)
@@ -92,6 +96,29 @@ def resp(status: int, body_obj: Any, content_type="application/geo+json"):
         "body": json.dumps(body_obj, cls=DecimalEncoder)
     }
 
+def decimal_default(obj):
+    if isinstance(obj, Decimal):
+        # Nếu là số nguyên thì để int, số thập phân thì để float
+        return int(obj) if obj % 1 == 0 else float(obj)
+    raise TypeError
+
+
+import math
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    
+    a = math.sin(delta_phi / 2)**2 + \
+        math.cos(phi1) * math.cos(phi2) * \
+        math.sin(delta_lambda / 2)**2
+    
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
 # ==== Handler ====
 def lambda_handler(event, context):
     """
@@ -114,8 +141,9 @@ def lambda_handler(event, context):
     """
     # 1) Query params
     qp = event.get("queryStringParameters") or {}
-    days = parse_int(qp.get("days"), DEFAULT_DAYS)
-    days = 1 if days < 1 else (60 if days > 60 else days) 
+    #days = parse_int(qp.get("days"), DEFAULT_DAYS)
+    days = 7
+    #days = 1 if days < 1 else (7 if days > 7 else days) 
     sensor = (qp.get("sensor") or "").strip().lower()      
     region = (qp.get("region") or "").strip()              
     bbox = parse_bbox(qp.get("bbox"))
@@ -146,6 +174,8 @@ def lambda_handler(event, context):
     # Định dạng data đưa cho frontend
     projection = "#pk, #lat, #lon, #ad, #at, #adt, #sat, #ins, #conf, #frp, #b1, #b2, #sc, #tr, #src, #reg"
 
+    grid_set = set()
+
     for d in date_list(days):
         last = None
         while True:
@@ -161,6 +191,13 @@ def lambda_handler(event, context):
             r = table.query(**params)
 
             for it in r.get("Items", []):
+
+                grid_key = (round(float(it["latitude"]), 1), round(float(it["longitude"]), 1))
+                if grid_key in grid_set:
+                    continue
+                grid_set.add(grid_key)
+
+
                 if sensor and str(it.get("instrument") or "").lower() != sensor:
                     continue
                 if region and str(it.get("region") or "") != region:
@@ -169,8 +206,6 @@ def lambda_handler(event, context):
                 try:
                     lon = float(it["longitude"]); lat = float(it["latitude"])
                 except Exception:
-                    continue
-                if not in_bbox(lon, lat, bbox):
                     continue
 
                 fid = str(it.get(PRIMARY_KEY_NAME))
@@ -190,4 +225,24 @@ def lambda_handler(event, context):
         if len(features) >= MAX_ITEMS:
             break
 
-    return resp(200, {"type": "FeatureCollection", "features": features})
+    # 3) Trả GeoJSON
+    geojson_data = {
+        "type": "FeatureCollection", 
+        "features": features
+    }
+
+    json_payload = json.dumps(geojson_data, default=decimal_default).encode('utf-8')
+    compressed_payload = gzip.compress(json_payload)
+    
+    
+    base64_payload = base64.b64encode(compressed_payload).decode('utf-8')
+
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "body": json.dumps({"compressed_data": base64_payload}),
+        "isBase64Encoded": False # Chúng ta bọc base64 trong 1 json object nên để False
+    }

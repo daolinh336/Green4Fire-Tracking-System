@@ -1,5 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
+import pako from 'pako';
 import VietnamMap from './VietnamMap';
 import LoadingStatus from './LoadingStatus';
 import LoadingStatusPredict from './LoadingStatusPredict';

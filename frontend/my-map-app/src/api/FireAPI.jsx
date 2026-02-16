@@ -1,3 +1,5 @@
+import pako from 'pako'
+
 const API_CONFIG = {
   BASE_URL: 'https://vdhgbth050.execute-api.ap-southeast-2.amazonaws.com/production/firmsfire',
   //BASE_URL: '',
@@ -45,8 +47,24 @@ const FireAPI = {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const data = await response.json();
-        console.log(`✅ Loaded ${data.features?.length || 0} fire points`);
+        // const data = await response.json();
+        const result = await response.json();
+        
+        // 1. Lấy chuỗi base64 từ object trả về
+        const base64Data = result.compressed_data;
+        
+        // 2. Chuyển Base64 sang Binary (Uint8Array)
+        const binaryString = window.atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const decompressed = pako.ungzip(bytes, { to: 'string' });
+        
+        const data = JSON.parse(decompressed);
+        console.log(`✅ Decompressed ${data.features?.length || 0} fire points`);
         return data;
 
       } catch (error) {
