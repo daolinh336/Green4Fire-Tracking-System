@@ -17,6 +17,52 @@ DEFAULT_PAST_DAYS = 7       # số ngày quá khứ dùng để chạy fwi
 DEFAULT_FORECAST_DAYS = 1   # số ngày forecast (để lấy hôm nay / ngày tới)
 DEFAULT_N_SAMPLES = 5       # 1 điểm tâm + 4 điểm random trong bbox
 
+
+import httpx
+import asyncio
+
+async def fetch_open_meteo_daily_async(
+    client: httpx.AsyncClient,
+    lat: float,
+    lon: float,
+    past_days: int = DEFAULT_PAST_DAYS,
+    forecast_days: int = DEFAULT_FORECAST_DAYS,
+    timezone: str = "auto",
+) -> Dict[str, Any]:
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "daily": ",".join(
+            [
+                "temperature_2m_max",
+                "relative_humidity_2m_min",
+                "wind_speed_10m_max",
+                "precipitation_sum",
+            ]
+        ),
+        "past_days": past_days,
+        "forecast_days": forecast_days,
+        "timezone": timezone,
+    }
+
+    resp = await client.get(OPEN_METEO_URL, params=params, timeout=30)
+    resp.raise_for_status()
+    return resp.json()
+
+def response_to_dataframe(data: Dict[str, Any]) -> pd.DataFrame:
+    if "daily" not in data:
+        raise RuntimeError(f"Open-Meteo response missing 'daily' section: {data}")
+
+    daily = data["daily"]
+    times = pd.to_datetime(daily["time"])
+    df = pd.DataFrame(index=times)
+    df["tas"] = daily["temperature_2m_max"]         
+    df["hurs"] = daily["relative_humidity_2m_min"]   
+    df["sfcWind"] = daily["wind_speed_10m_max"]     
+    df["pr"] = daily["precipitation_sum"]           
+    df = df.astype(float)
+    return df
+
 def classify_fwi(fwi_value: float) -> Dict[str, Any]:
     if fwi_value < 5:
         danger_class = 0
@@ -38,7 +84,72 @@ def classify_fwi(fwi_value: float) -> Dict[str, Any]:
         label = "Extreme"
     return {"danger_class": danger_class, "danger_label": label}
 
-# gọi open meteo, xử lý thành daily df
+
+async def compute_cell_fwi_async(
+    cell: Dict[str, Any],
+    past_days: int = DEFAULT_PAST_DAYS,
+    forecast_days: int = DEFAULT_FORECAST_DAYS,
+    n_samples_total: int = DEFAULT_N_SAMPLES
+) -> Optional[Dict[str, Any]]:
+    today_str = date.today().isoformat()
+    seed = f"{cell['cell_id']}-{today_str}"
+    points = sample_points_for_cell(cell, n_samples_total=n_samples_total, seed=seed)
+
+    async with httpx.AsyncClient() as client:
+        tasks = []
+        for p in points:
+            print(f"Chạy task lay data cho điểm {p} trong cell {cell['cell_id']}")
+            tasks.append(fetch_open_meteo_daily_async(
+                client, p["lat"], p["lon"], past_days, forecast_days
+            ))
+        
+        print(f"--- Đang gửi {len(tasks)} request song song tới Open-Meteo ---")
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+    valid_results = []
+    for res in responses:
+        if not isinstance(res, Exception) and res is not None:
+            valid_results.append(res)
+
+    if not valid_results:
+        print(f"[ERROR] Tất cả request cho cell {cell['cell_id']} đều thất bại.")
+
+    fwi_values: List[float] = []
+    for i, resp_data in enumerate(responses):
+        p = points[i]
+        try:
+            if isinstance(resp_data, Exception) or resp_data is None:
+                print(f"[INFO] Điểm {p} lỗi, đang lấy data của điểm thành công khác để thay thế...")
+                resp_data = valid_results[0]
+            df = response_to_dataframe(resp_data)
+            
+            fwi_series = compute_fwi_timeseries(df, lat=p["lat"])
+            fwi_today = float(fwi_series.isel(time=-1).values)
+            fwi_values.append(fwi_today)
+            print(f"Lay xong và tính FWI cho điểm {p}")
+
+        except Exception as exc:
+            print(f"[WARN] Không tính được FWI cho điểm {p} trong cell {cell['cell_id']}: {exc}")
+
+    if not fwi_values:
+        return None
+
+    fwi_mean = float(np.mean(fwi_values))
+    fwi_max = float(np.max(fwi_values))
+    danger_info = classify_fwi(fwi_mean)
+
+    return {
+        "cell_id": cell["cell_id"],
+        "lat": float(cell["lat"]),
+        "lon": float(cell["lon"]),
+        "forest_frac": float(cell.get("forest_frac", 1.0)),
+        "fwi_mean": fwi_mean,
+        "fwi_max": fwi_max,
+        "n_samples": len(fwi_values),
+        **danger_info,
+    }
+
+
 def fetch_open_meteo_daily(
     lat: float,
     lon: float,
@@ -119,7 +230,7 @@ def compute_fwi_timeseries(df_daily: pd.DataFrame, lat: float) -> xr.DataArray:
     lat_da = xr.DataArray(lat, attrs={"units": "degrees_north"})
 
     # gọi xclim return: DC, DMC, FFMC, ISI, BUI, FWI
-    _, _, _, _, _, FWI = cffwis_indices(
+    DC, DMC, FFMC, ISI, BUI, FWI = cffwis_indices(
         tas=tas,
         pr=pr,
         sfcWind=sfc_wind,
@@ -149,55 +260,10 @@ def sample_points_for_cell(
 
     return points
 
-# tính fwi cho 1 cell (gộp từ nhiều sample)
 def compute_cell_fwi(
     cell: Dict[str, Any],
     past_days: int = DEFAULT_PAST_DAYS,
     forecast_days: int = DEFAULT_FORECAST_DAYS,
-    n_samples_total: int = DEFAULT_N_SAMPLES,
+    n_samples_total: int = DEFAULT_N_SAMPLES
 ) -> Optional[Dict[str, Any]]:
-    today_str = date.today().isoformat()
-    seed = f"{cell['cell_id']}-{today_str}"
-
-    points = sample_points_for_cell(cell, n_samples_total=n_samples_total, seed=seed)
-
-    fwi_values: List[float] = []
-
-    for p in points:
-        try:
-            df = fetch_open_meteo_daily(
-                lat=p["lat"],
-                lon=p["lon"],
-                past_days=past_days,
-                forecast_days=forecast_days,
-            )
-            fwi_series = compute_fwi_timeseries(df, lat=p["lat"])
-            # lấy fwi ngày cuối cùng (trong trường hợp forecast_days > 1)
-            fwi_today = float(fwi_series.isel(time=-1).values)
-            fwi_values.append(fwi_today)
-        except Exception as exc:  
-            print(
-                f"[WARN] Không tính được FWI cho điểm {p} trong cell {cell['cell_id']}: {exc}"
-            )
-
-    if not fwi_values:
-        print(f"[ERROR] Không có giá trị FWI hợp lệ cho cell {cell['cell_id']}")
-        return None
-
-    fwi_mean = float(np.mean(fwi_values))
-    fwi_max = float(np.max(fwi_values))
-
-    danger_info = classify_fwi(fwi_mean)
-
-    result: Dict[str, Any] = {
-        "cell_id": cell["cell_id"],
-        "lat": float(cell["lat"]),
-        "lon": float(cell["lon"]),
-        "forest_frac": float(cell.get("forest_frac", 1.0)),
-        "fwi_mean": fwi_mean,
-        "fwi_max": fwi_max,
-        "n_samples": len(fwi_values),
-        **danger_info,
-    }
-
-    return result
+    return asyncio.run(compute_cell_fwi_async(cell, past_days, forecast_days, n_samples_total))

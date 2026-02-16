@@ -22,12 +22,11 @@ MIN_CONF = int(os.getenv("MIN_CONF", "0"))
 MAX_ITEMS = int(os.getenv("MAX_ITEMS", "500000"))
 HTTP_TIMEOUT = int(os.getenv("TIMEOUT", "60"))
 
-# ======== AWS clients ========
+# aws
 secrets = boto3.client("secretsmanager")
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(DDB_TABLE)
 
-# ======== HTTP helpers ========
 def http_get_text(url: str, timeout: int = HTTP_TIMEOUT, accept: str | None = None) -> tuple[int, str, str]:
     """
     Gửi HTTP GET và trả về nội dung dạng text, có hỗ trợ gzip.
@@ -80,7 +79,6 @@ def http_get_json(url: str, timeout: int = HTTP_TIMEOUT) -> dict:
         snippet = text[:300].replace("\n", " ")
         raise RuntimeError(f"Response is not JSON. Content-Type={ctype}. First 300 chars: {snippet}") from e
 
-# ======== Secrets MAP KEY ========
 def get_map_key() -> str:
     resp = secrets.get_secret_value(SecretId=SECRET_NAME)
     if "SecretString" in resp:

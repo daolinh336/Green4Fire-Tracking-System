@@ -10,10 +10,10 @@ from boto3.dynamodb.conditions import Key
 # ==== ENV ====
 DDB_TABLE = os.getenv("DDB_TABLE", "FIRMSFires")
 PRIMARY_KEY_NAME = os.getenv("PRIMARY_KEY_NAME", "ID")
-GSI_NAME = os.getenv("GSI_NAME", "FIRMSFires_ByDate")   # PK: gsi_date (S), SK: acq_datetime_utc (S)
+GSI_NAME = os.getenv("GSI_NAME", "FIRMSFires_ByDate")
 DEFAULT_DAYS = int(os.getenv("DEFAULT_DAYS", "30"))
 MAX_ITEMS = int(os.getenv("MAX_ITEMS", "20000"))
-ALLOW_ORIGIN = os.getenv("ALLOW_ORIGIN", "*")           # CORS
+ALLOW_ORIGIN = os.getenv("ALLOW_ORIGIN", "*")       
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(DDB_TABLE)
@@ -190,5 +190,4 @@ def lambda_handler(event, context):
         if len(features) >= MAX_ITEMS:
             break
 
-    # 3) Trả GeoJSON
     return resp(200, {"type": "FeatureCollection", "features": features})

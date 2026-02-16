@@ -1,0 +1,7 @@
+services:
+  prediction:
+    build: .
+    container_name: full_pipeline-prediction
+    restart: "no"
+    volumes:
+      - ./data:/data
