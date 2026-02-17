@@ -2,24 +2,24 @@ import random
 from datetime import date
 from typing import Dict, Any, List, Optional
 
-import numpy as np
+import requests 
+import httpx
 import pandas as pd
-import requests
-import xarray as xr
-from xclim.indices.fire import cffwis_indices
+
+import xarray as xr # Import bên trong hàm
+from xclim.indices.fire import cffwis_indices # THƯ VIỆN CỰC NẶNG
+import asyncio
+import numpy as np
 
 if not hasattr(np, "NaN"):
-    np.NaN = np.nan  
+    np.NaN = np.nan 
+
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 DEFAULT_PAST_DAYS = 7       # số ngày quá khứ dùng để chạy fwi
 DEFAULT_FORECAST_DAYS = 1   # số ngày forecast (để lấy hôm nay / ngày tới)
 DEFAULT_N_SAMPLES = 5       # 1 điểm tâm + 4 điểm random trong bbox
-
-
-import httpx
-import asyncio
 
 async def fetch_open_meteo_daily_async(
     client: httpx.AsyncClient,
@@ -45,11 +45,14 @@ async def fetch_open_meteo_daily_async(
         "timezone": timezone,
     }
 
-    resp = await client.get(OPEN_METEO_URL, params=params, timeout=30)
+    resp = await client.get(OPEN_METEO_URL, params=params, timeout=6)
     resp.raise_for_status()
     return resp.json()
 
 def response_to_dataframe(data: Dict[str, Any]) -> pd.DataFrame:
+
+    import pandas as pd # Import bên trong hàm
+
     if "daily" not in data:
         raise RuntimeError(f"Open-Meteo response missing 'daily' section: {data}")
 
@@ -91,6 +94,7 @@ async def compute_cell_fwi_async(
     forecast_days: int = DEFAULT_FORECAST_DAYS,
     n_samples_total: int = DEFAULT_N_SAMPLES
 ) -> Optional[Dict[str, Any]]:
+
     today_str = date.today().isoformat()
     seed = f"{cell['cell_id']}-{today_str}"
     points = sample_points_for_cell(cell, n_samples_total=n_samples_total, seed=seed)
@@ -123,7 +127,7 @@ async def compute_cell_fwi_async(
                 resp_data = valid_results[0]
             df = response_to_dataframe(resp_data)
             
-            fwi_series = compute_fwi_timeseries(df, lat=p["lat"])
+            DC, DMC, FFMC, ISI, BUI, fwi_series = compute_fwi_timeseries(df, lat=p["lat"])
             fwi_today = float(fwi_series.isel(time=-1).values)
             fwi_values.append(fwi_today)
             print(f"Lay xong và tính FWI cho điểm {p}")
@@ -134,6 +138,11 @@ async def compute_cell_fwi_async(
     if not fwi_values:
         return None
 
+    DC_mean = float(np.mean(DC))
+    DMC_mean = float(np.mean(DMC))
+    FFMC_mean = float(np.mean(FFMC))
+    ISI_mean = float(np.mean(ISI))
+    BUI_mean = float(np.mean(BUI))
     fwi_mean = float(np.mean(fwi_values))
     fwi_max = float(np.max(fwi_values))
     danger_info = classify_fwi(fwi_mean)
@@ -145,52 +154,13 @@ async def compute_cell_fwi_async(
         "forest_frac": float(cell.get("forest_frac", 1.0)),
         "fwi_mean": fwi_mean,
         "fwi_max": fwi_max,
-        "n_samples": len(fwi_values),
+        "DC_mean": DC_mean,
+        "DMC_mean": DMC_mean,
+        "ffmc_mean": FFMC_mean,
+        "isi_mean": ISI_mean,
+        "bui_mean": BUI_mean,
         **danger_info,
     }
-
-
-def fetch_open_meteo_daily(
-    lat: float,
-    lon: float,
-    past_days: int = DEFAULT_PAST_DAYS,
-    forecast_days: int = DEFAULT_FORECAST_DAYS,
-    timezone: str = "auto",
-) -> pd.DataFrame:
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "daily": ",".join(
-            [
-                "temperature_2m_max",
-                "relative_humidity_2m_min",
-                "wind_speed_10m_max",
-                "precipitation_sum",
-            ]
-        ),
-        "past_days": past_days,
-        "forecast_days": forecast_days,
-        "timezone": timezone,
-    }
-
-    resp = requests.get(OPEN_METEO_URL, params=params, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
-
-    if "daily" not in data:
-        raise RuntimeError(f"Open-Meteo response missing 'daily' section: {data}")
-
-    daily = data["daily"]
-
-    times = pd.to_datetime(daily["time"])
-    df = pd.DataFrame(index=times)
-    df["tas"] = daily["temperature_2m_max"]         
-    df["hurs"] = daily["relative_humidity_2m_min"]   
-    df["sfcWind"] = daily["wind_speed_10m_max"]     
-    df["pr"] = daily["precipitation_sum"]           
-    df = df.astype(float)
-
-    return df
 
 # tính fwi bằng xclim
 def compute_fwi_timeseries(df_daily: pd.DataFrame, lat: float) -> xr.DataArray:
@@ -241,7 +211,7 @@ def compute_fwi_timeseries(df_daily: pd.DataFrame, lat: float) -> xr.DataArray:
         initial_start_up=True,
     )
 
-    return FWI
+    return DC, DMC, FFMC, ISI, BUI, FWI
 
 
 # lấy mẫu điểm trong 1 cell

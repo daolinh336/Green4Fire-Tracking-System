@@ -1,25 +1,28 @@
 import json
+import boto3
+import os
+from pathlib import Path
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fwi import (
-    compute_cell_fwi,
-    DEFAULT_N_SAMPLES,
-    DEFAULT_PAST_DAYS,
-    DEFAULT_FORECAST_DAYS
-)
 
-SITES_PATH = Path("/data/sites.json")
-OUTPUT_GEOJSON_PATH = Path("/data/fwi_latest_v2.geojson")
-OUTPUT_GEOJSON_PATH_p1 = Path("/data/fwi_latest1.geojson")
-OUTPUT_GEOJSON_PATH_p2 = Path("/data/fwi_latest2.geojson")
-OUTPUT_GEOJSON_PATH_p3 = Path("/data/fwi_latest3.geojson")
-OUTPUT_GEOJSON_PATH_p4 = Path("/data/fwi_latest4.geojson")
+s3_client = boto3.client("s3")
+SITES_BUCKET = os.getenv("BUCKET", "firms-fwi-data") 
+SITES_KEY = "data/sites.json"
 
-def load_sites(path: Path = SITES_PATH) -> List[Dict[str, Any]]:
-    text = path.read_text(encoding="utf-8")
-    data = json.loads(text)
-    return data
+
+OUTPUT_GEOJSON_PATH = Path("/tmp/fwi_latest_v2.geojson")
+OUTPUT_GEOJSON_PATH_p1 = Path("/tmp/fwi_latest1.geojson")
+OUTPUT_GEOJSON_PATH_p2 = Path("/tmp/fwi_latest2.geojson")
+OUTPUT_GEOJSON_PATH_p3 = Path("/tmp/fwi_latest3.geojson")
+OUTPUT_GEOJSON_PATH_p4 = Path("/tmp/fwi_latest4.geojson")
+OUTPUT_GEOJSON_PATH_p5 = Path("/tmp/fwi_latest5.geojson")
+
+
+def load_sites(bucket: str, key: str) -> List[Dict[str, Any]]:
+    response = s3_client.get_object(Bucket=bucket, Key=key)
+    content = response['Body'].read().decode('utf-8')
+    return json.loads(content)
 
 # từ bbox sang tọa độ polygon
 def bbox_to_polygon_coords(bbox: Dict[str, float]) -> List[List[float]]:
@@ -60,9 +63,13 @@ def build_geojson(
                 "forest_frac": res["forest_frac"],
                 "fwi_mean": res["fwi_mean"],
                 "fwi_max": res["fwi_max"],
+                "dc_mean": res["DC_mean"],
+                "dmc_mean": res["DMC_mean"],
+                "ffmc_mean": res["ffmc_mean"],
+                "isi_mean": res["isi_mean"],
+                "bui_mean": res["bui_mean"],
                 "danger_class": res["danger_class"],
                 "danger_label": res["danger_label"],
-                "n_samples": res["n_samples"],
                 "updated_at": timestamp,
             },
         }
@@ -75,32 +82,38 @@ def build_geojson(
 
 def save_geojson(obj: Dict[str, Any], path: Path) -> None:
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[INFO] Đã ghi GeoJSON FWI ra: {path}")
+    print(f"[INFO] Đã ghi tạm ra: {path}")
 
+    s3_key = f"data/{path.name}"
+    try:
+        s3_client.upload_file(str(path), SITES_BUCKET, s3_key, ExtraArgs={'ContentType': 'application/json'})
+        print(f"[SUCCESS] Đã upload lên S3: s3://{SITES_BUCKET}/{s3_key}")
+    except Exception as e:
+        print(f"[ERROR] Không thể upload lên S3: {e}")
 
 
 def merge_final() -> None:
     all_features = []
-    part_files = [
-        Path("/data/fwi_latest1.geojson"),
-        Path("/data/fwi_latest2.geojson"),
-        Path("/data/fwi_latest3.geojson"),
-        Path("/data/fwi_latest4.geojson")
+    part_filenames = [
+        "fwi_latest1.geojson", 
+        "fwi_latest2.geojson", 
+        "fwi_latest3.geojson", 
+        "fwi_latest4.geojson",
+        "fwi_latest5.geojson"
     ]
     
-    print("[INFO] Bắt đầu gộp các file GeoJSON...")
-    
-    for p in part_files:
-        if p.exists():
-            try:
-                data = json.loads(p.read_text(encoding="utf-8"))
-                features = data.get("features", [])
-                all_features.extend(features)
-                print(f"  - Đã đọc {len(features)} features từ {p.name}")
-            except Exception as e:
-                print(f"  - [LỖI] Không thể đọc file {p.name}: {e}")
-        else:
-            print(f"  - [CẢNH BÁO] File {p.name} không tồn tại.")
+    for filename in part_filenames:
+        s3_key = f"data/{filename}"
+        try:
+            response = s3_client.get_object(Bucket=SITES_BUCKET, Key=s3_key)
+            data = json.loads(response['Body'].read().decode('utf-8'))
+            
+            features = data.get("features", [])
+            all_features.extend(features)
+            print(f"  - Đã lấy {len(features)} features từ {filename}")
+            
+        except Exception as e:
+            print(f"  - [CẢNH BÁO] Không tìm thấy hoặc lỗi khi đọc {filename}: {e}")
 
     final_geojson = {
         "type": "FeatureCollection",
@@ -108,20 +121,20 @@ def merge_final() -> None:
     }
 
     save_geojson(final_geojson, OUTPUT_GEOJSON_PATH)
-    print(f"[SUCCESS] Đã gộp tổng cộng {len(all_features)} features vào {OUTPUT_GEOJSON_PATH}")
-
+    
+    print(f"[SUCCESS] Đã gộp tổng cộng {len(all_features)} features.")
 
 # Lambda handler (dùng cho cả local & AWS)
 def lambda_handler(event: Any = None, context: Any = None) -> Dict[str, Any]:
-
-    cells = load_sites(SITES_PATH)
+    from fwi import compute_cell_fwi, DEFAULT_N_SAMPLES, DEFAULT_PAST_DAYS, DEFAULT_FORECAST_DAYS
+    cells = load_sites(SITES_BUCKET, SITES_KEY)
     total_cells = len(cells)
 
     if event is None:
-        slot = '3:00'
+        slot = '1:00'
     else:
-        slot = event.get('slot', '3:00')
-    step = total_cells // 4
+        slot = event.get('slot', 'merge')
+    step = total_cells // 5
     
     if slot == "1:00":
         start_idx, end_idx = 0, step
@@ -133,13 +146,19 @@ def lambda_handler(event: Any = None, context: Any = None) -> Dict[str, Any]:
         start_idx, end_idx = step * 2, step * 3
         output_file = OUTPUT_GEOJSON_PATH_p3
     elif slot == "2:30":
-        start_idx, end_idx = step * 3, total_cells
+        start_idx, end_idx = step * 3, step * 4
         output_file = OUTPUT_GEOJSON_PATH_p4
+    elif slot == "3:00":
+        start_idx, end_idx = step * 4, total_cells
+        output_file = OUTPUT_GEOJSON_PATH_p5
     else:
         merge_final()
-        return
+        return {
+        "statusCode": 200,
+        "body": json.dumps({"message": "Merged"})
+        }
 
-    target_cells = cells[start_idx:end_idx-520]
+    target_cells = cells[start_idx:end_idx]
     results: List[Optional[Dict[str, Any]]] = []
     print(f"[SYSTEM] Slot {slot}: Xử lý từ index {start_idx} đến {end_idx} (Tổng: {len(target_cells)} cells)")
 
@@ -153,7 +172,7 @@ def lambda_handler(event: Any = None, context: Any = None) -> Dict[str, Any]:
         )
         results.append(res)
 
-    geojson_obj = build_geojson(cells, results)
+    geojson_obj = build_geojson(target_cells, results)
     save_geojson(geojson_obj, output_file)
 
     processed = sum(1 for r in results if r is not None)
@@ -169,8 +188,3 @@ def lambda_handler(event: Any = None, context: Any = None) -> Dict[str, Any]:
             ensure_ascii=False,
         ),
     }
-
-if __name__ == "__main__":
-    response = lambda_handler()
-    print("[INFO] Lambda A (local) finished:")
-    print(response)
